@@ -1,0 +1,107 @@
+/* Body */
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f7fc;
+}
+
+/* Card styling */
+.card {
+    border-radius: 15px;
+    border: none;
+    margin-top: 50px;
+}
+
+.card-body {
+    padding: 40px;
+}
+
+h3 {
+    font-weight: 600;
+    color: #333;
+}
+
+/* Form input styling */
+input {
+    border-radius: 5px;
+    box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+input:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 8px rgba(0, 123, 255, 0.5);
+}
+
+/* Button styling */
+button {
+    background-color: #007bff;
+    border: none;
+    border-radius: 5px;
+    padding: 12px;
+    font-size: 16px;
+}
+
+button:hover {
+    background-color: #0056b3;
+    cursor: pointer;
+}
+
+/* Form group padding */
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+/* Link styling */
+a {
+    color: #007bff;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+/* Alert styling */
+.alert {
+    margin-top: 20px;
+    animation: fadeIn 1s ease-out;
+}
+
+/* Fade In effect */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+/* Text alignment */
+.text-center {
+    text-align: center;
+}
+
+/* Button styling for login */
+.btn-block {
+    width: 100%;
+    background-color: #007bff;
+    border: none;
+    border-radius: 5px;
+    padding: 10px;
+    font-size: 16px;
+}
+
+.btn-block:hover {
+    background-color: #0056b3;
+    cursor: pointer;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+    .card-body {
+        padding: 25px;
+    }
+
+    h3 {
+        font-size: 24px;
+    }
+}
