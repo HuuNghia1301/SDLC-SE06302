@@ -30,9 +30,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         $last_name = $_POST['last_name'];
         $email = $_POST['email'];
         $phone_number = $_POST['phone_number'];
+        $password = password_hash($_POST['password'], PASSWORD_DEFAULT); // Mã hóa mật khẩu
         $role = $_POST['role'];
-        $sql = "INSERT INTO users (first_name, last_name, email, phone_number, role) 
-                VALUES ('$first_name', '$last_name', '$email', '$phone_number', '$role')";
+        $sql = "INSERT INTO users (first_name, last_name, email, phone_number,password, role) 
+                VALUES ('$first_name', '$last_name', '$email', '$phone_number','$password' ,'$role')";
         $conn->query($sql);
         header("Location: " . $_SERVER['PHP_SELF']);
     } elseif (isset($_POST['add_class'])) {
@@ -92,6 +93,26 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $conn->query($sql);
     header("Location: " . $_SERVER['PHP_SELF']);
 }
+if (isset($_POST['delete_user_id'])) {
+    $delete_user_id = $_POST['delete_user_id'];
+
+    // Xóa người dùng từ cơ sở dữ liệu
+    $stmt = $conn->prepare("DELETE FROM users WHERE UserID = ?");
+    $stmt->bind_param("i", $delete_user_id);
+
+    if ($stmt->execute()) {
+        echo "<script>alert('Xóa người dùng thành công.');</script>";
+    } else {
+        echo "<script>alert('Lỗi khi xóa người dùng: " . $stmt->error . "');</script>";
+    }
+
+    $stmt->close();
+
+    // Làm mới trang sau khi xóa
+    header("Location: " . $_SERVER['PHP_SELF']);
+    exit();
+}
+
 ?>
 
 <!DOCTYPE html>
@@ -154,31 +175,53 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         <div class="tab-content mt-3">
             <!-- Người Dùng -->
             <div class="tab-pane fade show active" id="users">
-                <h3>Quản lý Người Dùng</h3>
-                <button class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#addUserModal"><i class="fas fa-user-plus"></i> Thêm Người Dùng</button>
-                <table class="table table-bordered">
-                    <thead>
-                        <tr>
-                            <th>Họ</th>
-                            <th>Tên</th>
-                            <th>Email</th>
-                            <th>Số điện thoại</th>
-                            <th>Role</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php while ($row = $users_result->fetch_assoc()): ?>
-                            <tr>
-                                <td><?= $row['first_name'] ?></td>
-                                <td><?= $row['last_name'] ?></td>
-                                <td><?= $row['email'] ?></td>
-                                <td><?= $row['phone_number'] ?></td>
-                                <td><?= $row['role'] ?></td>
-                            </tr>
-                        <?php endwhile; ?>
-                    </tbody>
-                </table>
-            </div>
+    <h3>Quản lý Người Dùng</h3>
+    <button class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#addUserModal">
+        <i class="fas fa-user-plus"></i> Thêm Người Dùng
+    </button>
+    <table class="table table-bordered">
+        <thead>
+            <tr>
+                <th>Họ</th>
+                <th>Tên</th>
+                <th>Email</th>
+                <th>Số điện thoại</th>
+                <th>PassWord</th>
+                <th>Role</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php while ($row = $users_result->fetch_assoc()): ?>
+                <tr id="row_<?= $row['UserID'] ?>">
+                    <td><?= $row['first_name'] ?></td>
+                    <td><?= $row['last_name'] ?></td>
+                    <td><?= $row['email'] ?></td>
+                    <td><?= $row['phone_number'] ?></td>
+                    <td><?= $row['password'] ?></td>
+                    <td><?= $row['role'] ?></td>
+                    <td>
+                    <form method="post" style="display:inline;">
+    <input type="hidden" name="delete_user_id" value="<?= $row['UserID'] ?>">
+    <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Bạn có chắc chắn muốn xóa người dùng này không?')">
+        <i class="fas fa-trash-alt"></i> Xóa
+    </button>
+</form>
+                        <button 
+                            class="btn btn-primary btn-sm" 
+                            data-bs-toggle="modal" 
+                            data-bs-target="#editUserModal" 
+                            onclick="editUser(<?= $row['UserID'] ?>, '<?= $row['first_name'] ?>', '<?= $row['last_name'] ?>', '<?= $row['email'] ?>', '<?= $row['phone_number'] ?>', '<?= $row['password'] ?>', '<?= $row['role'] ?>')"
+                        >
+                            <i class="fas fa-edit"></i> Sửa
+                        </button>
+                    </td>
+                </tr>
+            <?php endwhile; ?>
+        </tbody>
+    </table>
+</div>
+
 
             <!-- Lớp Học -->
             <div class="tab-pane fade" id="classes">
@@ -259,6 +302,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                             <input type="text" id="phone_number" name="phone_number" class="form-control" required>
                         </div>
                         <div class="mb-3">
+                            <label for="password" class="form-label">Password</label>
+                            <input type="text" id="password" name="password" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
                             <label for="role" class="form-label">Vai trò</label>
                             <select id="role" name="role" class="form-select" required>
                                 <option value="admin">Admin</option>
@@ -275,6 +322,54 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             </form>
         </div>
     </div>
+    <div class="modal fade" id="editUserModal">
+    <div class="modal-dialog">
+        <form method="post">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Sửa Thông Tin Người Dùng</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="editUserID" name="UserID">
+                    <div class="mb-3">
+                        <label for="editFirstName" class="form-label">Họ</label>
+                        <input type="text" id="editFirstName" name="first_name" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editLastName" class="form-label">Tên</label>
+                        <input type="text" id="editLastName" name="last_name" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editEmail" class="form-label">Email</label>
+                        <input type="email" id="editEmail" name="email" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editPhoneNumber" class="form-label">Số Điện Thoại</label>
+                        <input type="text" id="editPhoneNumber" name="phone_number" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editPassword" class="form-label">Mật Khẩu</label>
+                        <input type="password" id="editPassword" name="password" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editRole" class="form-label">Vai Trò</label>
+                        <select id="editRole" name="role" class="form-select" required>
+                            <option value="admin">Admin</option>
+                            <option value="student">Student</option>
+                            <option value="teacher">Teacher</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" name="edit_user" class="btn btn-success">Lưu</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
 
     <!-- Add Class Modal -->
     <div class="modal fade" id="addClassModal">
@@ -365,5 +460,21 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         </div>
     </div>
 </body>
+<script>
+    function editUser(id, firstName, lastName, email, phoneNumber, password, role) {
+        // Gán giá trị vào các trường của modal
+        document.getElementById('editUserID').value = id;
+        document.getElementById('editFirstName').value = firstName;
+        document.getElementById('editLastName').value = lastName;
+        document.getElementById('editEmail').value = email;
+        document.getElementById('editPhoneNumber').value = phoneNumber;
+        document.getElementById('editPassword').value = password;
+        document.getElementById('editRole').value = role;
+    }
 
+    function addRow(id) {
+        alert("Thêm dòng với ID: " + id);
+        // Xử lý logic thêm nếu cần
+    }
+</script>
 </html>
